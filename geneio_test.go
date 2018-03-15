@@ -287,6 +287,24 @@ var readTests = []struct {
 		Sorted: true,
 		Error:  "exons overlap",
 	},
+	{
+		Name: "Single coding gene with no stop_codon",
+		Input: "" +
+			"X\t.\texon\t2\t70\t0\t+\t.\tgene_id F; transcript_id F1;\n" +
+			"X\t.\texon\t71\t90\t0\t+\t.\tgene_id F; transcript_id F1;\n" +
+			"X\t.\tstart_codon\t60\t62\t0\t+\t.\tgene_id F; transcript_id F1;\n",
+		Sorted: true,
+		Error:  "geneio: only one of start/stop codon found for F1",
+	},
+	{
+		Name: "Single coding gene with no start_codon",
+		Input: "" +
+			"X\t.\texon\t2\t70\t0\t+\t.\tgene_id F; transcript_id F1;\n" +
+			"X\t.\texon\t71\t90\t0\t+\t.\tgene_id F; transcript_id F1;\n" +
+			"X\t.\tstop_codon\t81\t83\t0\t+\t.\tgene_id F; transcript_id F1;\n",
+		Sorted: true,
+		Error:  "geneio: only one of start/stop codon found for F1",
+	},
 }
 
 func TestGeneReaderRead(t *testing.T) {

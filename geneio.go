@@ -115,9 +115,11 @@ type FeatureReader interface {
 
 // A GeneReader reads genes from a FeatureReader.
 //
-// It groups features with the same TID and GID into transcripts and genes
-// respectively. It only considers Features of type "exon", "codon_start" and
-// "codon_stop".
+// It groups consecutive features with the same TID and GID into transcripts
+// and genes respectively. It only considers Features of type "exon",
+// "codon_start" and "codon_stop". Features with the same GID that are not
+// read consecutively will result in different genes with the same GID being
+// created.
 type GeneReader struct {
 	r   FeatureReader
 	blk *geneBlock
@@ -243,9 +245,23 @@ func (geneBlk *geneBlock) ToGene() (*gene.Gene, error) {
 // newTrancript creates and returns a new gene.Transcript from s. Returns nil
 // and the error if it encounters one.
 func newTrancript(g *gene.Gene, tid string, s []Feature) (gene.Transcript, error) {
+	startCodon := false
+	stopCodon := false
 	for _, f := range s {
 		if f.Type() == "start_codon" {
-			return newCodingTranscript(g, tid, s)
+			startCodon = true
+		}
+		if f.Type() == "stop_codon" {
+			stopCodon = true
+		}
+	}
+	if startCodon && stopCodon {
+		return newCodingTranscript(g, tid, s)
+	} else if startCodon || stopCodon {
+		return nil, &FeaturesError{
+			Gene:  g,
+			Msg:   "geneio: only one of start/stop codon found for " + tid,
+			Feats: s,
 		}
 	}
 	return newNonCodingTranscript(g, tid, s)
